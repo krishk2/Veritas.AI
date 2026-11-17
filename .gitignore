@@ -1,1 +1,24 @@
 .env
+.env*
+.env*.local
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+*.db
+*.db-*
+*.sqlite*
+veritas_claim_index.json
+*.index
+
+# Next.js web application
+web/node_modules/
+web/.next/
+web/out/
+web/build/
+.neon
+node_modules/

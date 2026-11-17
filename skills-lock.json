@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "anti-ui-slop": {
+      "source": "uizze.com",
+      "sourceType": "well-known",
+      "computedHash": "19650ea66e65f90e3e94be28b1a4143ee1b9bff1a8efad5984b0f4f0b2baa5e8"
+    }
+  }
+}

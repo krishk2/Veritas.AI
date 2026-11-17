@@ -1,0 +1,33 @@
+# Core LangChain & LangGraph
+langgraph>=0.1.0
+langchain>=0.2.0
+langchain-community>=0.2.0
+langchain-google-genai>=1.0.0
+langchain-groq>=1.2.0
+langchain-openai>=1.8.0
+
+# API & Web Framework
+fastapi>=0.110.0
+uvicorn>=0.30.0
+pydantic>=2.7.0
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+python-dotenv>=1.0.0
+
+# LLM Providers & Search
+google-generativeai>=0.8.0
+groq>=1.7.0
+tavily-python>=0.3.0
+duckduckgo-search>=8.1.1
+
+# Vector Indexing & Multimedia Forensics
+faiss-cpu>=1.8.0
+pillow>=10.3.0
+opencv-python-headless>=4.9.0
+
+# Database & Observability
+sqlmodel>=0.0.18
+psycopg2-binary>=2.9.9
+psycopg[binary]>=3.1.18
+neo4j>=5.19.0
+langfuse>=5.2.0

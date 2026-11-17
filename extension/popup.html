@@ -2,49 +2,106 @@
 <html>
 
 <head>
-  <title>MumbAI Verifier</title>
+  <meta charset="utf-8">
+  <title>Veritas.AI Verifier</title>
   <link rel="stylesheet" type="text/css" href="styles.css">
 </head>
 
 <body>
   <div class="container">
     <header>
-      <h2>MumbAI Verifier</h2>
-      <p>AI-Powered Misinformation Shield</p>
+      <div class="header-content">
+        <h2>Veritas.AI</h2>
+        <span class="badge-tag">Multimodal Shield</span>
+      </div>
+      <p>AI-Powered Misinformation & Deepfake Verification</p>
     </header>
 
     <div id="input-section">
-      <textarea id="claim-input" placeholder="Enter a claim or let us scan the page title..."></textarea>
-      <button id="verify-btn">Verify Claim</button>
+      <textarea id="claim-input" placeholder="Enter a claim, paste text, or drop media to verify..."></textarea>
+      
+      <!-- Drag and Drop & Clipboard Image Zone -->
+      <div id="drop-zone" class="drop-zone">
+        <input type="file" id="image-file-input" accept="image/*,video/*" class="hidden">
+        <div id="drop-zone-prompt">
+          <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          <span>Drag & drop media, <label for="image-file-input" class="browse-link">browse</label>, or <b>Ctrl+V</b> to paste</span>
+        </div>
+        <div id="image-preview-container" class="hidden">
+          <img id="image-preview" src="" alt="Attached Preview">
+          <div class="image-preview-info">
+            <span id="image-name">media.png</span>
+            <button type="button" id="remove-image-btn" title="Remove media">&times;</button>
+          </div>
+        </div>
+      </div>
+
+      <button id="verify-btn">Verify Claim & Sources</button>
     </div>
 
     <div id="loading" class="hidden">
       <div class="spinner"></div>
-      <p>Agents are investigating...</p>
+      <p id="loading-text">Agents verifying evidence across web sources...</p>
     </div>
 
     <div id="result-section" class="hidden">
-      <div id="summary-card">
-        <h3 id="verdict"></h3>
-        <div class="confidence-wrapper">
-          <span class="confidence-label">AI Confidence</span>
-          <div class="confidence-meter">
-            <div id="confidence-bar"></div>
-          </div>
-          <p style="margin: 5px 0 0; font-size: 12px; color: #636e72;">Score: <span id="confidence-score"></span></p>
+      <!-- Perplexity-Style Sources Strip -->
+      <div id="sources-container" class="sources-container">
+        <div class="section-title-row">
+          <span class="section-title">Sources</span>
+          <span id="sources-count" class="count-badge">0</span>
+        </div>
+        <div id="sources-carousel" class="sources-carousel">
+          <!-- Dynamically populated Perplexity source cards -->
         </div>
       </div>
 
-      <button id="details-btn">View Agent Workflow</button>
+      <!-- Verdict Summary Card -->
+      <div id="summary-card">
+        <div class="verdict-header">
+          <h3 id="verdict"></h3>
+          <span id="review-status" class="status-badge">VERIFIED</span>
+        </div>
+        
+        <div class="confidence-wrapper">
+          <div class="confidence-header">
+            <span class="confidence-label">Truth Score</span>
+            <span id="confidence-score" class="confidence-num">0%</span>
+          </div>
+          <div class="confidence-meter">
+            <div id="confidence-bar"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Media Forensics / Deepfake Banner (if media analyzed) -->
+      <div id="forensic-banner" class="forensic-banner hidden">
+        <div class="forensic-icon">⚠️</div>
+        <div class="forensic-info">
+          <strong id="forensic-title">Visual Forensics Alert</strong>
+          <span id="forensic-summary"></span>
+        </div>
+      </div>
+
+      <!-- Perplexity-Style Cited Explanation -->
+      <div class="explanation-card">
+        <div class="section-title-row">
+          <span class="section-title">Synthesized Fact-Check</span>
+        </div>
+        <div id="explanation" class="cited-text"></div>
+      </div>
+
+      <button id="details-btn">View Detailed Evidence & Audits</button>
 
       <div id="details-section" class="hidden">
-        <h4>Explanation</h4>
-        <p id="explanation"></p>
-
-        <h4>Evidence</h4>
+        <h4>Extracted Multimodal Evidence</h4>
         <ul id="evidence-list"></ul>
 
-        <h4>Credibility Report</h4>
+        <h4>Domain Credibility Audits</h4>
         <ul id="credibility-list"></ul>
       </div>
     </div>
