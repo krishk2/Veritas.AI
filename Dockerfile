@@ -10,9 +10,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install uv package manager
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Set working directory and non-root user (Hugging Face Spaces default UID 1000)
-WORKDIR /app
+# Set non-root user and working directory with correct ownership
 RUN useradd -m -u 1000 user
+WORKDIR /app
+RUN chown -R user:user /app
+
 ENV HOME=/home/user \
     PATH=/app/.venv/bin:/home/user/.local/bin:$PATH \
     PYTHONPATH=/app/src:$PYTHONPATH \
@@ -26,7 +28,7 @@ COPY --chown=user:user app.py ./
 
 # Install project and all dependencies into virtual environment
 USER user
-RUN uv venv && uv sync --no-dev
+RUN uv sync --no-dev
 
 # Expose default port (7860 for Hugging Face Spaces, or override via $PORT on Render/Railway)
 EXPOSE 7860
