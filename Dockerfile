@@ -14,22 +14,22 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 WORKDIR /app
 RUN useradd -m -u 1000 user
 ENV HOME=/home/user \
-    PATH=/home/user/.local/bin:$PATH \
+    PATH=/app/.venv/bin:/home/user/.local/bin:$PATH \
+    PYTHONPATH=/app/src:$PYTHONPATH \
     PYTHONUNBUFFERED=1 \
     PORT=7860
 
-# Copy dependency specifications first for optimal layer caching
+# Copy project specification, source code, and application entrypoint
 COPY --chown=user:user pyproject.toml uv.lock* README.md ./
+COPY --chown=user:user src/ ./src/
+COPY --chown=user:user app.py ./
 
-# Install project dependencies
+# Install project and all dependencies into virtual environment
 USER user
 RUN uv venv && uv sync --no-dev
-
-# Copy application source code
-COPY --chown=user:user src/ ./src/
 
 # Expose default port (7860 for Hugging Face Spaces, or override via $PORT on Render/Railway)
 EXPOSE 7860
 
 # Start FastAPI application via uvicorn inside the uv environment
-CMD ["sh", "-c", "uv run uvicorn veritas.api:app --host 0.0.0.0 --port ${PORT:-7860}"]
+CMD ["sh", "-c", "uvicorn veritas.api:app --host 0.0.0.0 --port ${PORT:-7860}"]
