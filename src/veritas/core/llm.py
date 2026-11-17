@@ -12,7 +12,10 @@ logger = logging.getLogger("veritas.llm")
 # Filtered Out (Decommissioned / Retired):
 # - Groq: 'llama-3-8b-8192', 'llama-3-70b-8192', 'mixtral-8x7b-32768' (SUNSET)
 # - Google: 'gemini-1.0-pro', 'gemini-pro', 'text-bison' (DECOMMISSIONED); 'gemini-2.5-flash-lite' (20 RPD CAP)
-# - Mistral: 'mistral-medium', 'mistral-tiny' (RETIRED)
+# Filtered Out (Decommissioned / Retired / Excluded):
+# - Groq: 'llama-3-8b-8192', 'llama-3-70b-8192', 'mixtral-8x7b-32768' (SUNSET)
+# - Google: 'gemini-1.0-pro', 'gemini-pro', 'text-bison' (DECOMMISSIONED); 'gemini-2.5-flash-lite' (20 RPD CAP)
+# - Mistral: All models removed from pipeline as requested
 # ==============================================================================
 
 MODELS_CATALOG = {
@@ -21,12 +24,9 @@ MODELS_CATALOG = {
         "llama-3.3-70b-versatile": "Groq LPU 70B flagship reasoning (~400ms)",
         "llama-3.2-11b-vision-preview": "Groq LPU multimodal vision",
     },
-    "mistral": {
-        "mistral-small-latest": "Mistral dense NLI & strict instruction-following",
-        "mistral-large-latest": "Mistral flagship reasoning & complex synthesis",
-        "pixtral-12b-2409": "Mistral native multimodal vision & document OCR",
-    },
     "nvidia": {
+        "meta/llama-3.2-11b-vision-instruct": "NVIDIA NIM accelerated vision & keyframe forensics with TensorRT-LLM",
+        "meta/llama-3.2-90b-vision-instruct": "NVIDIA NIM flagship 90B vision & multimodal entity grounding",
         "meta/llama-3.3-70b-instruct": "NVIDIA NIM flagship 70B reasoning with TensorRT-LLM",
         "meta/llama-3.1-8b-instruct": "NVIDIA NIM accelerated fast text inference",
         "openai/gpt-oss-120b": "NVIDIA NIM containerized open-weight GPT-OSS 120B reasoning",
@@ -63,41 +63,40 @@ AGENT_SPECIALIZATION: Dict[str, Dict[str, Any]] = {
         "fallback": [
             ("nvidia", "meta/llama-3.1-8b-instruct"),
             ("cloudflare", "@cf/meta/llama-3.1-8b-instruct"),
-            ("mistral", "mistral-small-latest"),
             ("google", "gemini-2.5-flash")
         ],
         "rationale": "Requires sub-100ms response time on LPU hardware so user searches feel instant."
     },
     "evidence_agent": {
         "role": "Zero-Shot NLI & Fine-Grained Sentence Extraction",
-        "primary": ("mistral", "mistral-small-latest"),
+        "primary": ("nvidia", "meta/llama-3.1-8b-instruct"),
         "fallback": [
-            ("nvidia", "meta/llama-3.1-8b-instruct"),
             ("nvidia", "nvidia/nemotron-3-nano"),
             ("groq", "llama-3.1-8b-instant"),
+            ("cloudflare", "@cf/meta/llama-3.1-8b-instruct"),
             ("google", "gemini-2.5-flash")
         ],
-        "rationale": "Mistral models excel at dense context chunk extraction, zero-shot NLI, and strict anti-hallucination."
+        "rationale": "NVIDIA NIM TensorRT-accelerated inference provides fast, deterministic sentence classification and NLI."
     },
     "image_agent": {
         "role": "Visual Context, Entity Alignment & Image OCR",
-        "primary": ("google", "gemini-2.5-flash"),
+        "primary": ("nvidia", "meta/llama-3.2-11b-vision-instruct"),
         "fallback": [
             ("cloudflare", "m-moondream3.1-9B-A2B"),
-            ("mistral", "pixtral-12b-2409"),
             ("groq", "llama-3.2-11b-vision-preview"),
+            ("google", "gemini-2.5-flash")
         ],
-        "rationale": "Google Gemini offers SOTA visual grounding, reading micro-text on jerseys/signs and scene understanding."
+        "rationale": "NVIDIA NIM containerized vision models provide GPU-optimized image forensic inspection and visual OCR."
     },
     "video_agent": {
         "role": "Temporal Deepfake Forensics & Keyframe Glitch Analysis",
-        "primary": ("google", "gemini-2.5-flash"),
+        "primary": ("nvidia", "meta/llama-3.2-11b-vision-instruct"),
         "fallback": [
             ("cloudflare", "m-moondream3.1-9B-A2B"),
-            ("mistral", "pixtral-12b-2409"),
-            ("groq", "llama-3.2-11b-vision-preview")
+            ("groq", "llama-3.2-11b-vision-preview"),
+            ("google", "gemini-2.5-flash")
         ],
-        "rationale": "High-throughput multimodal token processing for sequential keyframe inspection."
+        "rationale": "NVIDIA NIM TensorRT-accelerated CV models excel at high-throughput keyframe artifact detection."
     },
     "judge_agent": {
         "role": "Multimodal Synthesis, Verdict Determination & Perplexity Citations [1, 2]",
@@ -106,7 +105,6 @@ AGENT_SPECIALIZATION: Dict[str, Dict[str, Any]] = {
             ("nvidia", "meta/llama-3.3-70b-instruct"),
             ("nvidia", "openai/gpt-oss-120b"),
             ("cloudflare", "gpt-oss-120b"),
-            ("mistral", "mistral-large-latest"),
             ("google", "gemini-2.5-flash")
         ],
         "rationale": "Requires flagship 70B+ / 120B weights to arbitrate conflicting sources, structure paragraphs, and insert exact citations."
@@ -117,7 +115,6 @@ AGENT_SPECIALIZATION: Dict[str, Dict[str, Any]] = {
         "fallback": [
             ("nvidia", "nvidia/nemotron-3-nano"),
             ("groq", "llama-3.1-8b-instant"),
-            ("mistral", "mistral-small-latest"),
             ("google", "gemini-2.5-flash")
         ],
         "rationale": "Lightweight lookup, fast execution on Cloudflare global edge network or NVIDIA Nemotron Nano."
@@ -144,20 +141,6 @@ def _create_client(provider: str, model_name: str, temperature: float = 0.0) -> 
                 groq_api_key=groq_key,
                 max_retries=1,
                 timeout=8
-            )
-
-        elif provider == "mistral":
-            mistral_key = os.getenv("MISTRAL_API_KEY", "").strip()
-            if not mistral_key:
-                return None
-            from langchain_openai import ChatOpenAI
-            return ChatOpenAI(
-                model=model_name,
-                temperature=temperature,
-                api_key=mistral_key,
-                base_url="https://api.mistral.ai/v1",
-                max_retries=1,
-                timeout=12
             )
 
         elif provider == "nvidia":
@@ -252,7 +235,7 @@ def get_agent_llm(agent_name: str, temperature: float = 0.0) -> Any:
         raise RuntimeError(
             f"Unable to initialize LLM for agent '{agent_name}'. "
             f"Attempted candidates: {candidate_chain}. Please add active keys in .env for "
-            f"GROQ_API_KEY, MISTRAL_API_KEY, NVIDIA_API_KEY, CLOUDFLARE_API_TOKEN, or GOOGLE_API_KEY."
+            f"GROQ_API_KEY, NVIDIA_API_KEY, CLOUDFLARE_API_TOKEN, or GOOGLE_API_KEY."
         )
 
     primary = active_clients[0]
